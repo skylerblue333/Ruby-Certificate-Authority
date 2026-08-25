@@ -1,12 +1,30 @@
-name: CI
-on: [push, pull_request]
+name: ruby-ca-ci
+
+on:
+  push:
+    branches: [main, "product/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
         with:
-          python-version: '3.11'
-      - run: pip install -r requirements.txt
-      - run: pytest tests/ -v
+          ruby-version: '3.4'
+      - name: Syntax
+        run: ruby -c lib/sky_ca.rb && ruby -c test/sky_ca_test.rb
+      - name: Tests
+        run: ruby -Ilib:test test/sky_ca_test.rb
+      - name: OpenSSL runtime
+        run: ruby -ropenssl -e 'abort "OpenSSL unavailable" unless defined?(OpenSSL::X509)'
+      - name: Build image
+        run: docker build -t sky-ca:${{ github.sha }} .
+      - name: Verify non-root image
+        run: test "$(docker image inspect sky-ca:${{ github.sha }} --format '{{.Config.User}}')" = "10001:10001"
+      - name: Container self-test
+        run: docker run --rm sky-ca:${{ github.sha }}
