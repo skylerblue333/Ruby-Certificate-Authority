@@ -1,44 +1,47 @@
-<!-- PORTFOLIO PROJECT PROFILE: maintained by the repository owner -->
+# Sky Certificate Authority
 
-## Project profile and code-audit snapshot
+A small Ruby/OpenSSL certificate-authority primitive for local development, test PKI, and controlled SKYCOIN4444 engineering workflows.
 
-**What this is:** **Ruby-Certificate-Authority** is a public repository described as: “Enterprise-grade certificate authority implementation in Ruby. #SkyCoin4444 #AI #Blockchain #DevOps #Innovation” Its dominant language signals are **Python (4 files)**.
+## Implemented
 
-**Why it has value:** Its value is best understood through the implementation evidence currently present in the repository: **18 tracked files** were observed in the shallow audit, with the source structure and existing documentation providing the project’s specific context. This README does not treat a prototype, experiment, or archive as a production system without supporting evidence.
+- Ruby 3.4 implementation using the standard OpenSSL bindings.
+- RSA 3072-bit self-signed root CA generation.
+- RSA 2048-bit leaf-key generation and SHA-256 certificate signing.
+- Explicit CA and leaf X.509 extensions.
+- Leaf validity bounded to 397 days.
+- Common-name validation and bounded length.
+- Random positive serial numbers by default, with deterministic serial injection for tests.
+- Trust verification against the generated CA certificate.
+- Minitest coverage for issuance, key matching, invalid inputs, and rejection of certificates from another root.
+- Ruby syntax/test/OpenSSL CI plus a non-root container self-test.
 
-**Implementation evidence:** 2 test-related file(s) detected; 2 dependency or package manifest(s) detected; 2 build/CI/infrastructure signal(s) detected; and 3 documentation or governance file(s) detected. Test filenames observed include `tests/__init__.py`, `tests/test_main.py`. Dependency or package files include `package.json`, `requirements.txt`. Build, CI, or infrastructure signals include `Dockerfile`, `.github/workflows/ci.yml`.
+## Example
 
-**Current status:** The repository is tracked on the `main` branch. The existing source tree, configuration, tests, workflows, and documentation remain authoritative for supported behavior and maturity. A code audit is not a production-readiness certification, and the presence of a test or workflow file does not establish that all checks pass.
+```ruby
+require_relative "lib/sky_ca"
 
-**Relationship to the wider portfolio:** This repository is one focused component of the broader Skyler Blue Spillers portfolio across AI, software engineering, cloud and DevOps, cybersecurity, blockchain, finance, education, social systems, and creative work. It may provide a service boundary, implementation pattern, experiment, archive, or reusable idea for related repositories. Treat repositories as technical dependencies only where documented interfaces and verified project requirements support that relationship.
+ca = SkyCA::Authority.new(common_name: "Development Root", validity_days: 365)
+issued = ca.issue(common_name: "service.internal", validity_days: 30)
+puts ca.verify(issued.fetch(:certificate_pem))
+```
 
-**Quality and security note:** No obvious secret-like pattern was detected by the limited static scan; this is not a substitute for a security audit. No TODO/FIXME marker was detected in the scanned text files.
+## Product and security boundary
 
----
+Status: **engineering beta / local PKI utility**.
 
-# Ruby Certificate Authority
+This repository does **not** provide a production network CA, HSM/KMS-backed root-key custody, ACME, OCSP, CRLs, certificate revocation workflows, persistent serial databases, audit-log durability, role-based approval, offline-root ceremony, key rotation, name-constraint policy, multi-tenant isolation, compliance certification, HA, or production deployment.
 
-![GitHub stars](https://img.shields.io/github/stars/skylerblue333/Ruby-Certificate-Authority?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/skylerblue333/Ruby-Certificate-Authority?style=flat-square)
+The root private key exists only in process memory in the current implementation. Production certificate-authority systems require substantially stronger key custody and operational controls than this library claims.
 
-## 🌟 Overview
-**Ruby-Certificate-Authority** is a professional-grade project within the **SkyCoin4444** ecosystem. It focuses on delivering high-value solutions in the domain of **Python**.
+## Run verification
 
-## 🚀 Key Features
-- **Scalable Architecture**: Designed for enterprise-level growth and performance.
-- **Modern Standards**: Implements best practices for clean code and maintainability.
-- **Robust Integration**: Built to work seamlessly within modern cloud-native environments.
+```bash
+ruby -c lib/sky_ca.rb
+ruby -Ilib:test test/sky_ca_test.rb
+docker build -t sky-ca .
+docker run --rm sky-ca
+```
 
-## 🛠️ Technology Stack
-- **Primary Domain**: Python
-- **Ecosystem**: SkyCoin4444 Digital Platform
+## License
 
-## 📂 Structure
-The project is organized into a modular structure to ensure clarity and ease of development.
-
-## 👨‍💻 Author
-**Skyler Blue Spillers**
-*Professional Chess Player & Software Engineer*
-
----
-*Powered by SkyCoin4444*
+See `LICENSE`.
