@@ -1,5 +1,6 @@
 require "digest"
 require "openssl"
+require "time"
 
 module SkyCA
   module_function
