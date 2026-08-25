@@ -1,12 +1,33 @@
-name: CI
-on: [push, pull_request]
+name: certificate-ci
+
+on:
+  push:
+    branches:
+      - main
+      - "product/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
         with:
-          python-version: '3.11'
-      - run: pip install -r requirements.txt
-      - run: pytest tests/ -v
+          ruby-version: "3.3"
+      - name: Syntax
+        run: ruby -c lib/sky_ca.rb && ruby -c bin/sky-ca-inspect && ruby -c test/sky_ca_test.rb
+      - name: Tests
+        run: ruby -Ilib:test test/sky_ca_test.rb
+      - name: Build container
+        run: docker build -t sky-ca-inspect:ci .
+      - name: Verify non-root image
+        run: test "$(docker image inspect sky-ca-inspect:ci --format '{{.Config.User}}')" = "10001"
+      - name: CLI smoke test
+        run: docker run --rm sky-ca-inspect:ci --help
