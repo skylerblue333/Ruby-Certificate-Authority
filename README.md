@@ -1,44 +1,46 @@
-<!-- PORTFOLIO PROJECT PROFILE: maintained by the repository owner -->
+# Sky CA Inspector
 
-## Project profile and code-audit snapshot
+Sky CA Inspector is a small Ruby CLI/library for inspecting X.509 certificates and applying a narrow certificate-authority policy check. It parses certificate metadata, detects CA basic constraints, checks validity windows and self-signature, reports key type/size, and emits a SHA-256 certificate fingerprint.
 
-**What this is:** **Ruby-Certificate-Authority** is a public repository described as: “Enterprise-grade certificate authority implementation in Ruby. #SkyCoin4444 #AI #Blockchain #DevOps #Innovation” Its dominant language signals are **Python (4 files)**.
+**Status: engineering beta.** Despite the historical repository name, this project does **not** issue certificates, create or store CA private keys, publish CRLs, provide OCSP, rotate keys, or operate a production certificate authority.
 
-**Why it has value:** Its value is best understood through the implementation evidence currently present in the repository: **18 tracked files** were observed in the shallow audit, with the source structure and existing documentation providing the project’s specific context. This README does not treat a prototype, experiment, or archive as a production system without supporting evidence.
+## Inspect a certificate
 
-**Implementation evidence:** 2 test-related file(s) detected; 2 dependency or package manifest(s) detected; 2 build/CI/infrastructure signal(s) detected; and 3 documentation or governance file(s) detected. Test filenames observed include `tests/__init__.py`, `tests/test_main.py`. Dependency or package files include `package.json`, `requirements.txt`. Build, CI, or infrastructure signals include `Dockerfile`, `.github/workflows/ci.yml`.
+```bash
+ruby bin/sky-ca-inspect certificate.pem
+```
 
-**Current status:** The repository is tracked on the `main` branch. The existing source tree, configuration, tests, workflows, and documentation remain authoritative for supported behavior and maturity. A code audit is not a production-readiness certification, and the presence of a test or workflow file does not establish that all checks pass.
+The JSON report includes subject, issuer, serial number, validity window, CA flag, self-signed status, public-key type/size, and SHA-256 fingerprint.
 
-**Relationship to the wider portfolio:** This repository is one focused component of the broader Skyler Blue Spillers portfolio across AI, software engineering, cloud and DevOps, cybersecurity, blockchain, finance, education, social systems, and creative work. It may provide a service boundary, implementation pattern, experiment, archive, or reusable idea for related repositories. Treat repositories as technical dependencies only where documented interfaces and verified project requirements support that relationship.
+Apply the built-in CA policy:
 
-**Quality and security note:** No obvious secret-like pattern was detected by the limited static scan; this is not a substitute for a security audit. No TODO/FIXME marker was detected in the scanned text files.
+```bash
+ruby bin/sky-ca-inspect --require-ca root-ca.pem
+```
 
----
+The policy currently requires `CA:TRUE`, a valid time window, self-signature, and at least 2048 bits for RSA keys. A policy failure exits `1`; malformed input or invocation exits `2`.
 
-# Ruby Certificate Authority
+## Verification
 
-![GitHub stars](https://img.shields.io/github/stars/skylerblue333/Ruby-Certificate-Authority?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/skylerblue333/Ruby-Certificate-Authority?style=flat-square)
+```bash
+ruby -c lib/sky_ca.rb
+ruby -c bin/sky-ca-inspect
+ruby -Ilib:test test/sky_ca_test.rb
+```
 
-## 🌟 Overview
-**Ruby-Certificate-Authority** is a professional-grade project within the **SkyCoin4444** ecosystem. It focuses on delivering high-value solutions in the domain of **Python**.
+Container:
 
-## 🚀 Key Features
-- **Scalable Architecture**: Designed for enterprise-level growth and performance.
-- **Modern Standards**: Implements best practices for clean code and maintainability.
-- **Robust Integration**: Built to work seamlessly within modern cloud-native environments.
+```bash
+docker build -t sky-ca-inspect .
+docker run --rm -v "$PWD:/certs:ro" sky-ca-inspect /certs/root-ca.pem
+```
 
-## 🛠️ Technology Stack
-- **Primary Domain**: Python
-- **Ecosystem**: SkyCoin4444 Digital Platform
+The image runs as non-root UID `10001`. CI checks Ruby syntax, Minitest coverage, container build, non-root configuration, and CLI startup.
 
-## 📂 Structure
-The project is organized into a modular structure to ensure clarity and ease of development.
+## SKYCOIN4444 integration
 
-## 👨‍💻 Author
-**Skyler Blue Spillers**
-*Professional Chess Player & Software Engineer*
+The inspector can be used by deployment or security pipelines to reject malformed, expired, or policy-incompatible certificates before configuration is promoted. Integrations should invoke the CLI/library contract and keep private-key operations in a dedicated, reviewed PKI system.
 
----
-*Powered by SkyCoin4444*
+## Security limits
+
+A successful inspection is not a complete PKI audit. The tool does not validate an arbitrary trust chain against a trust store, check revocation, enforce hostname/SAN identity, assess every cryptographic algorithm, manage key custody, or prove operational CA security. Production PKI should use established CA/HSM tooling, documented ceremonies, access controls, revocation infrastructure, monitoring, and independent review.
