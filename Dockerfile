@@ -1,8 +1,8 @@
-FROM python:3.11-slim
+FROM ruby:3.3-alpine
+RUN adduser -D -u 10001 app
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-ENV PYTHONPATH=/app
-EXPOSE 8080
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+COPY lib ./lib
+COPY bin ./bin
+RUN chmod 0555 bin/sky-ca-inspect
+USER 10001
+ENTRYPOINT ["ruby", "/app/bin/sky-ca-inspect"]
