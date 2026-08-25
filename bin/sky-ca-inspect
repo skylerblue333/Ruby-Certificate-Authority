@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+require "json"
+require_relative "../lib/sky_ca"
+
+if ARGV == ["--help"] || ARGV == ["-h"]
+  puts "usage: sky-ca-inspect [--require-ca] <certificate.pem>"
+  exit 0
+end
+
+require_ca = ARGV.delete("--require-ca")
+if ARGV.length != 1
+  warn "usage: sky-ca-inspect [--require-ca] <certificate.pem>"
+  exit 2
+end
+
+begin
+  report = SkyCA.inspect_pem(File.binread(ARGV.first))
+  output = { certificate: report }
+  if require_ca
+    failures = SkyCA.validate_ca(report)
+    output[:policy] = { valid: failures.empty?, failures: failures }
+  end
+  puts JSON.pretty_generate(output)
+  exit(require_ca && !output.fetch(:policy).fetch(:valid) ? 1 : 0)
+rescue Errno::ENOENT, Errno::EACCES, ArgumentError => error
+  warn "error: #{error.message}"
+  exit 2
+end
